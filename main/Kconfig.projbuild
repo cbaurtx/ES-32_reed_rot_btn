@@ -1,0 +1,12 @@
+menu "Test reed_rot_btn"
+
+    config ROT_KEY_TIMEOUT
+      int "key_rot_read timeout"
+      range 100 6001
+      default 500
+    help
+      Timout for keypad input, know turned or wheel rotated
+
+endmenu
+
+

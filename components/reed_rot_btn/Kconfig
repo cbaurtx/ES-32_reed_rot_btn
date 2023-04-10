@@ -1,0 +1,127 @@
+#
+# @file    keypad_rotdecode.h
+# @author  Christof Baur
+# @date    26.11.2021
+# @version 0.2
+# @copyright   Christof Baur
+# @brief   ESP-32 library to interface with a rotary encoder and buttons
+#
+# License: MIT
+#
+# EXT1 wake-up is used and only RTCIO 0 to 15 are supported
+#
+# Default settings
+#
+# Default RTC_GPIOs used:
+# Name                 RTC_IO num    GPIO num         rtc sleep mask
+# Reed0 contact        RTC_GPIO00    GPIO36           x01
+# Reed1 contact        RTC_GPIO09    GPIO32           n.a.
+# Rotary B             RTC_GPIO03    GPIO39           x08
+# Rotary A             RTC_GPIO04    GPIO34           x10
+# Rotary push          RTC_GPIO05    GPIO35           x20
+# Push 1               RTC_GPIO08    GPIO33           x10
+#
+# GPIO 34-39 are input only and do not feature internal pull-up / pull-down resistors
+# Internal pull-up / internal pull-down resitors are not used during deep sleep to conserve power
+#
+
+menu "Reed, rotary decoder & buttons"
+    config REED0_RTC_GPIO_NUM
+        int "Reed0 IO number"
+        range 0 14
+        default 0
+        help
+            Number of RTC_GPIO to be used for reed 0
+
+    config REED1_RTC_GPIO_NUM
+        int "Reed1 IO number"
+        range 0 14
+        default 9
+        help
+            Number of RTC IO to be used for reed 1
+
+
+    config REED_DEBOUNCE_OUT
+        bool "Use reed debounce signal out"
+        default "n"
+        help
+            Debug output to monitor the debounce reed signal
+
+    config REED_DEBOUNCE_RTC_GPIO_NUM
+        depends on REED_DEBOUNCE_OUT
+        int "Reed debounced output RTC GPIO number"
+        range 0 14
+        default 10
+        help
+            RTC GPIO to be used for reed debounce signal out
+
+    config AB_RTC_A_GPIO_NUM
+        int "Rotary encoder A signal RTC_IO number"
+        range 0 14
+        default 3
+        help
+            RTC_GPIO number for RTC_GPIOs to be used for rotary decoder. Two consecutive IOs are used for A and B.
+
+    config BTN_RTC_GPIO_MASK
+        hex "Push button mask"
+        range 1 0xfffc
+        default 0x0120
+        help
+            Mask for RTC_GPIOs to be used for buttons.
+            Do not set bits used in the rotary encoder AB signal mask or reed 0 or reed 1.
+            At least one bit must be set
+
+    config WAIT_REED_SET
+        int "Wait time for reed"
+        range 1 65535
+        default 10
+        help
+            Wait time counter value for reed. Wait for bouncing to stop.
+
+    config WAIT_ROT_SET
+        int "Wait time for rotary AB encoder"
+        range 1 65535
+        default 500
+        help
+            Wait counter value for for rotary AB encoder. Wait for bouncing to stop.
+
+    config WAIT_BTN_SET
+        int "Wait time for push buttons"
+        range 1 65535
+        default 30000
+        help
+            Wait time counter value for push buttons. Wait for bouncing to stop.
+
+    config ENABLE_GPIO_2_OUT
+        bool "Enable GPIO 2 out"
+        default "n"
+        help
+          Configure GPIO 2 as output to drive the on board LED (for debugging)
+
+    config ISOLATE_GPIO_12
+        bool "Isolate GPIO 12"
+        default "y"
+        help
+          Isolate GPIO 12 to reduce current consumption, including during deep sleep
+
+   config ISOLATE_GPIO_15
+        bool "Isolate GPIO 15"
+        default "n"
+        help
+          Isolate GPIO 15 to reduce current consumption, including during deep sleep
+
+    config RTC_GPIO_WAKE_MASK
+        hex "Wake-up mask"
+        range 1 0xffff
+        default 0x0031
+        help
+            Mask which inputs wake the ESP from hibernation. Default excludes the AB encoder signals and includes all default buttons
+
+    config REED_DIV
+        int "Divide reed counts"
+        range 1 255
+        default 5
+        help
+            trigger an XTENSA interrupt onyl after REED_DIV reed counts
+
+endmenu

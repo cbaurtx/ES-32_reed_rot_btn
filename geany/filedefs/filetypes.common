@@ -1,0 +1,4 @@
+[build-menu]
+FT_01_LB=Build
+FT_01_CM=idf.py -C ~/Development/Source/ESP32/keypad_rotdecode/  build
+FT_01_WD=
