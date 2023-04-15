@@ -13,12 +13,13 @@ The double pole reed switch is used to improve and speed up debouncing.
 
 |Name|RTC_IO num|RTC_IO mask|GPIO num|
 |:-|:-|:-|:-|
-|Reed contact NO|RTC_GPIO08|0x010|GPIO33|
-|Reed contact NC|RTC_GPIO09|0x020|GPIO32|
+|Reed contact NO|RTC_GPIO08|0x0100|GPIO33|
+|Reed contact NC|RTC_GPIO09|0x0200|GPIO32|
 |Rotary A|RTC_GPIO03|0x0008|GPIO39|
 |Rotary B|RTC_GPIO04|0x0010|GPIO34|
 |Rotary push|RTC_GPIO05|0x0020|GPIO35|
 |Push 1|RTC_GPIO00|0x0001|GPIO36|
+|LED|RTC_GPIO10|0x0400|GPIO4|
 
 GPIO 34-39 are input only and do not feature pull-up / pull-down.
 Internal pull-up / pull-down are not used to conserve power during
