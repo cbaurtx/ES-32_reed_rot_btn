@@ -61,6 +61,7 @@ static uint32_t volatile reed_rot_btn_code;
 /*  for speed calculation */
 static uint32_t reed_time_prev;
 static uint32_t reed_time_curr;
+static uint32_t reed_time_delay;
 static uint32_t time_curr;
 
 static const uint8_t rtc2gpio_map[16] = {36, 37, 38, 39, 34, 35, 25, 26, 33, 32, 4, 0, 2, 15, 13};
@@ -91,7 +92,7 @@ void reed_rot_btn_init()
   reed_time_prev = xTaskGetTickCount();
   ulp_rot_cnt = 0x8000;
   start_ulp_prog();
-  ESP_LOGI(TAG, "Initialized");
+  ESP_LOGD(TAG, "Initialized");
 }
 
 esp_err_t reed_rot_btn_read(unsigned int* p_key_code, unsigned int *reed_delay ,int timeout)
@@ -99,19 +100,17 @@ esp_err_t reed_rot_btn_read(unsigned int* p_key_code, unsigned int *reed_delay ,
  recv_task = xTaskGetCurrentTaskHandle();
 
  if (xTaskNotifyWait(0x00, ULONG_MAX, p_key_code, timeout) == pdTRUE) {
+   ESP_LOGD(TAG, "rot_debug = %x", ulp_rot_tmp & 0x0ffff);
    if ((*p_key_code & 0x0003) == REED_EVNT){
       // reed_time_curr = xTaskGetTickCount();
-      ESP_LOGI(TAG, "reed_time_curr = %d", reed_time_curr);
-      *reed_delay = reed_time_curr - reed_time_prev;
-      reed_time_prev = reed_time_curr;
+      ESP_LOGD(TAG, "reed_time_delay = %d", reed_time_delay);
+      *reed_delay = reed_time_delay ;
       }
    return(ESP_OK);
    }
  else {
    // reed_time_curr = xTaskGetTickCount();
-   ESP_LOGI(TAG, "reed_time_curr = %d", reed_time_curr);
-   *reed_delay = reed_time_curr - reed_time_prev;
-   reed_time_prev = reed_time_curr;
+   ESP_LOGD(TAG, "Timeout\n");
    return(ESP_ERR_TIMEOUT);
    }
 }
@@ -125,9 +124,10 @@ static void IRAM_ATTR reed_rot_btn_isr(void* arg)
 {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     time_curr = xTaskGetTickCountFromISR();   // assign time as quickly as possible
-    if ((ulp_evnt & 0x0003) == REED_EVNT)
+    if ((ulp_evnt & 0x0003) == REED_EVNT) {
       reed_time_curr = time_curr;
-
+      reed_time_delay = reed_time_curr - reed_time_prev;
+      }
     reed_rot_btn_code = 0xffff & ulp_evnt;   // ulp variables are 32 bit, but only the lower 16 are valid
     reed_rot_btn_code |= (0xffff & ulp_btn) << 4;
     reed_rot_btn_code |= (0xffff & ulp_rot_cnt) << 16;

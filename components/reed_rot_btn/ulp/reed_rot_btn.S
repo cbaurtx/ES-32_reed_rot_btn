@@ -67,6 +67,8 @@
   wait_btn_cnt: .long 0
         .global rot_cnt
   rot_cnt: .long 0
+        .global rot_tmp
+  rot_tmp: .long 0
         .global btn
   btn: .long 0
 
@@ -192,6 +194,9 @@ rot_changed:
   and r3, r3, 0x0003                       // mask rot
   or r3, r0, r3
 
+  move r0, rot_tmp
+  st r3, r0, 0
+
   add r3, r3, st_tbl           // table look-up
   ld r0, r3, 0
   jumpr dec_rot_raise, 1, EQ   // r0 == 1 => rot_cnt--
@@ -199,12 +204,25 @@ rot_changed:
   jump end_rot_raising         // invalid transition: ignore
 
 inc_rot_raise:                 // r0 == 2 => rot_cnt++
+  move r3,  rot_tmp
+  ld r0, r3, 0
+  jumpr inc_rot, 0x0b, EQ                // r0 == 0x0b
+  jump end_rot_raising
+
+inc_rot:
   move r3, rot_cnt
   ld r0, r3, 0
   add r0, r0, 1
   st r0, r3, 0
   jump finalyze_rot
+
 dec_rot_raise:                 // r0 == 1 => rot_cnt--
+  move r3, rot_tmp
+  ld r0, r3, 0
+  jumpr dec_rot, 0x07, EQ
+  jump end_rot_decreasing
+
+dec_rot:
   move r3, rot_cnt
   ld r0, r3, 0
   sub r0, r0, 1
@@ -216,6 +234,10 @@ finalyze_rot:
   move r0, CONFIG_WAIT_ROT_SET
   st r0, r3, 0
 end_rot_raising:
+  move r2, r1                  // prev_io = curr_io
+  jump loop_forever
+
+end_rot_decreasing:
   move r2, r1                  // prev_io = curr_io
   jump loop_forever
 
