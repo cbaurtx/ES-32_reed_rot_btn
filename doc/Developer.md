@@ -54,6 +54,6 @@ AB decoders have 4 states 1 to 4. Invalid state transitions have to be ignored
 ![ ](ABdecoding.svg  "AB encoder states")
 
 Use a table with 16 entries to determine from AB current and AB previous which
-transition occured. The table contains 0 for invalid transitions, -1 if the
+transition occured. The table contains 0 for invalid transitions, +2 if the
 transition indicates counter clockwise rotation and +1 for transistions indicating
 clockwise rotatation.
