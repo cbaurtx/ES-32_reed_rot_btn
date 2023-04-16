@@ -88,7 +88,7 @@ menu "Reed, rotary decoder & buttons"
     config WAIT_BTN_SET
         int "Wait time for push buttons"
         range 1 65535
-        default 30000
+        default 300
         help
             Wait time counter value for push buttons. Wait for bouncing to stop.
 

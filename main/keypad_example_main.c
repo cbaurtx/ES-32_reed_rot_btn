@@ -33,7 +33,7 @@ void app_main(void) {
         if (err == ESP_OK) switch (key_code & 3) {
                 case REED_EVNT:
                     ESP_LOGI(TAG, "Reed event");
-                    ESP_LOGI(TAG, "Reed delay %d", key1_dly);
+                    ESP_LOGI(TAG, "Reed delay %d",  key1_dly);
                     break;
                 case BTN_EVNT:
                     ESP_LOGI(TAG, "Button event: %x", (key_code & 0xfffc) >> 2);

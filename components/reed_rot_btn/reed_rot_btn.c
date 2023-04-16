@@ -103,10 +103,9 @@ esp_err_t reed_rot_btn_read(unsigned int *p_key_code, unsigned int *reed_delay,
     recv_task = xTaskGetCurrentTaskHandle();
 
     if (xTaskNotifyWait(0x00, ULONG_MAX, p_key_code, timeout) == pdTRUE) {
-        ESP_LOGD(TAG, "rot_debug = %x", ulp_rot_tmp & 0x0ffff);
         if ((*p_key_code & 0x0003) == REED_EVNT) {
             // reed_time_curr = xTaskGetTickCount();
-            ESP_LOGD(TAG, "reed_time_delay = %d", reed_time_delay);
+            ESP_LOGD(TAG, "reed_time_delay = %d",  reed_time_delay);
             *reed_delay = reed_time_delay;
         }
         return (ESP_OK);
@@ -129,6 +128,7 @@ static void IRAM_ATTR reed_rot_btn_isr(void *arg)
     if ((ulp_evnt & 0x0003) == REED_EVNT) {
         reed_time_curr = time_curr;
         reed_time_delay = reed_time_curr - reed_time_prev;
+        reed_time_prev = reed_time_curr;
     }
     reed_rot_btn_code =
         0xffff &

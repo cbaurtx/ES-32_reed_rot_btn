@@ -58,20 +58,20 @@
 
 /* Define variables, which go into .bss section (zero-initialized data) */
   .bss
+
+  /* global variabled, can be accessed by Xtensa cores */
         .global evnt
   evnt: .long 0
-        .global wait_reed_cnt
-  wait_reed_cnt: .long 0
-        .global wait_rot_cnt
-  wait_rot_cnt: .long 0
-        .global wait_btn_cnt
-  wait_btn_cnt: .long 0
         .global rot_cnt
   rot_cnt: .long 0
-        .global rot_tmp
-  rot_tmp: .long 0
         .global btn
   btn: .long 0
+
+/* local variables, ULP access only */
+  rot_tmp: .long 0
+  wait_reed_cnt: .long 0
+  wait_rot_cnt: .long 0
+  wait_btn_cnt: .long 0
 
 /* Code goes into .text section */
     .text
@@ -120,6 +120,7 @@ loop_forever:
 
 change:                                      // at least one IO changed
     move r3, r0                            // use r3 as tmp: r3 = r1 xor r2 (which still is in R0)
+
     and r0, r3, IO_REED0_MASK    // r0 = (current_io xor prev_io) and mask_reed0
     and r0, r0, r1                       // raising?
     jumpr reed0_raising, 1, ge
@@ -134,9 +135,28 @@ change:                                      // at least one IO changed
     and r0, r3, CONFIG_BTN_RTC_GPIO_MASK     // mask: buttons
     and r0, r0, r1               // raising?
     jumpr btn_raising, 1, ge
+
+    // must be reed or btn falling
     move r2, r1                  // prev_io = curr_io
+    and r0, r3, CONFIG_BTN_RTC_GPIO_MASK     // mask: buttons
+    jumpr btn_falling, 1, ge
+
+    // reed0 or reed 1 falling
+    and r0, r3, IO_REED1_MASK
+    jumpr end_change, 1,  ge   // reed1 falling, do nothing
+
+    move r3, wait_reed_cnt                   // set reed wait
+    move r0, CONFIG_WAIT_REED_SET
+    st r0, r3, 0
+    jump end_change
+
+btn_falling:
+    move r3, wait_btn_cnt                   // set btn wait
+    move r0, CONFIG_WAIT_BTN_SET
+    st r0, r3, 0
+
 end_change:
-    jump loop_forever                        // falling edge btn or reed or invalid IO: do nothing
+    jump loop_forever                        // invalid IO: do nothing
 
 reed0_raising:
     move r3, wait_reed_cnt                   // check if waiting (debounce)
@@ -148,6 +168,15 @@ reed0_raising:
     #ifdef CONFIG_REED_DEBOUNCE_OUT
       WRITE_RTC_REG(RTC_GPIO_OUT_REG, RTC_GPIO_OUT_DATA_S + CONFIG_REED_DEBOUNCE_RTC_GPIO_NUM, 1, 1)
     #endif
+
+    stage_inc 1
+    jumps loop_forever, CONFIG_REED_DIV ,lt    // jum when reed counter not at max value
+    move r3, evnt
+    move r0, REED_EVNT
+    st r0, r3, 0
+    wake                                        // interrupt Xtensa
+    stage_rst                                   // reed counter at max: reset counter
+
 end_reed0_raising:
     move r2, r1                              // prev_io = curr_io
     jump loop_forever
@@ -177,6 +206,7 @@ btn_pressed:
     move r0, BTN_EVNT
     st r0, r3, 0
     wake                                     // interrupt Xtensa
+
 end_btn_raising:
     move r2, r1                              // prev_io = curr_io
     jump loop_forever
@@ -246,14 +276,7 @@ wait_reed_exp:
     #ifdef CONFIG_REED_DEBOUNCE_OUT
         WRITE_RTC_REG(RTC_GPIO_OUT_REG, RTC_GPIO_OUT_DATA_S + CONFIG_REED_DEBOUNCE_RTC_GPIO_NUM, 1, 0)
     #endif
-    stage_inc 1
-    jumps wait_reed_end, CONFIG_REED_DIV ,lt    // reed counter not at max value
-    move r3, evnt
-    move r0, REED_EVNT
-    st r0, r3, 0
-    wake                                        // interrupt Xtensa
-    stage_rst                                   // reed counter at max: reset counter
-wait_reed_end:
+jump wait_reed_end
 
 wait_btn:
     move r3, wait_btn_cnt
@@ -261,7 +284,15 @@ wait_btn:
     jumpr wait_rot, 1, lt        // wait_btn_cnt was 0 => do nothing
     sub r0, r0, 1                // count down wait
     st r0, r3, 0
+
+wait_reed_end:
+    jump loop_forever
+
 wait_btn_end:
+    jumpr wait_rot, 1, ge        // wait_btn_cnt is not 0 => do nothing
+    #ifdef CONFIG_REED_DEBOUNCE_OUT
+        WRITE_RTC_REG(RTC_GPIO_OUT_REG, RTC_GPIO_OUT_DATA_S + CONFIG_REED_DEBOUNCE_RTC_GPIO_NUM, 1, 0)
+    #endif
 
 wait_rot:
     move r3, wait_rot_cnt
